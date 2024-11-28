@@ -1,0 +1,90 @@
+[
+  {
+    "userId": "uuid-1234",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phone": "123-456-7890",
+    "address": "123 Main St, City, Country",
+    "profileImage": "https://example.com/profile/john.jpg",
+    "dob": "1990-05-12",
+    "gender": "male",
+    "role": "admin",
+    "createdAt": "2023-01-01"
+  },
+  {
+    "userId": "uuid-5678",
+    "name": "Jane Smith",
+    "email": "jane@example.com",
+    "phone": "987-654-3210",
+    "address": "456 Another St, City, Country",
+    "profileImage": "https://example.com/profile/jane.jpg",
+    "dob": "1992-07-20",
+    "gender": "female",
+    "role": "customer",
+    "createdAt": "2023-02-15"
+  },
+  {
+    "userId": "google-oauth2|117221977605173875699",
+    "name": "Apoorv",
+    "email": "change1296@gmail.com",
+    "createdAt": "2024-11-12T19:35:02.588Z",
+    "phone": "7509591293",
+    "address": "address changed again 23223",
+    "profileImage": "https://images.pexels.com/photos/7915359/pexels-photo-7915359.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    "dob": "1996-07-12",
+    "gender": "male",
+    "role": "admin"
+  },
+  {
+    "userId": "auth0|673ddde99122f60e71089d36",
+    "name": "change1296@gmail.com",
+    "email": "change1296@gmail.com",
+    "createdAt": "2024-11-20T13:02:45.528Z"
+  },
+  {
+    "userId": "auth0|673edcff5e0e08841605f346",
+    "name": "check123@gmail.com",
+    "email": "check123@gmail.com",
+    "createdAt": "2024-11-21T07:11:37.800Z",
+    "phone": "123456",
+    "address": "this is just the address",
+    "profileImage": "",
+    "dob": "",
+    "gender": "male"
+  },
+  {
+    "userId": "auth0|673f3ff1772a20c8904d0085",
+    "name": "apoorv@gmail.com",
+    "email": "apoorv@gmail.com",
+    "createdAt": "2024-11-21T14:13:15.276Z",
+    "role": "guest"
+  },
+  {
+    "userId": "auth0|67404fe127bf751c6c1607c3",
+    "name": "newcheck@gmail.com",
+    "email": "newcheck@gmail.com",
+    "createdAt": "2024-11-22T09:33:26.969Z",
+    "role": "customer"
+  },
+  {
+    "userId": "auth0|67405081afb1677163ea6ec6",
+    "name": "new@gmail.com",
+    "email": "new@gmail.com",
+    "createdAt": "2024-11-22T09:36:07.859Z",
+    "role": "customer"
+  },
+  {
+    "userId": "auth0|67408d2085ed0a9f7f153063",
+    "name": "new2211@gmail.com",
+    "email": "new2211@gmail.com",
+    "createdAt": "2024-11-22T13:54:45.620Z",
+    "role": "customer"
+  },
+  {
+    "userId": "auth0|674090a58d1a261f6b8890af",
+    "name": "check739@gmail.com",
+    "email": "check739@gmail.com",
+    "createdAt": "2024-11-22T14:09:46.266Z",
+    "role": "customer"
+  }
+]
