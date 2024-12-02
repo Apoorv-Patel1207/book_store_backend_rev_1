@@ -175,9 +175,9 @@ export const searchBooks = async (req: Request, res: Response) => {
   }
 };
 
-export const getPendingBooks = async (req: Request, res: Response) => {
+export const getBookRequests = async (req: Request, res: Response) => {
   try {
-    const result = await pool.query("SELECT * FROM pending_books");
+    const result = await pool.query("SELECT * FROM book_requests");
     res.json(result.rows);
   } catch (error) {
     console.error("Error fetching pending books:", error);
@@ -185,135 +185,135 @@ export const getPendingBooks = async (req: Request, res: Response) => {
   }
 };
 
-export const addPendingBook = async (req: Request, res: Response) => {
-  const { title, author, genre, price, stockQuantity } = req.body;
+export const addBookRequest = async (req: Request, res: Response) => {
   try {
-    const newPendingBook = await pool.query(
-      `INSERT INTO pending_books (id, title, author, genre, price, stockQuantity, status) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [uuidv4(), title, author, genre, price, stockQuantity, "pending"]
-    );
-    res.status(201).json(newPendingBook.rows[0]);
+    const {
+      title,
+      author,
+      genre,
+      price,
+      stockQuantity,
+      ISBN,
+      publisher,
+      pages,
+      language,
+      publicationDate,
+      description,
+      coverImage,
+    } = req.body;
+
+    const newBookId = uuidv4();
+
+    const query = `
+      INSERT INTO book_requests 
+      (id, title, author, genre, price, stock_quantity, ISBN, publisher, pages, language, publication_date, description, cover_image, status) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      RETURNING *;
+    `;
+
+    const result = await pool.query(query, [
+      newBookId,
+      title,
+      author,
+      genre,
+      price,
+      stockQuantity,
+      ISBN,
+      publisher,
+      pages,
+      language,
+      publicationDate,
+      description,
+      coverImage,
+      "pending",
+    ]);
+
+    res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error("Error adding pending book:", error);
+    console.error("Error adding book request:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
-export const approveBook = async (req: Request, res: Response) => {
+// Approve a pending book
+export const approveBookRequest = async (req: Request, res: Response) => {
   try {
-    const book = await pool.query(
-      "DELETE FROM pending_books WHERE id = $1 RETURNING *",
-      [req.params.id]
-    );
-    if (book.rows.length > 0) {
-      const approvedBook = book.rows[0];
-      delete approvedBook.status;
-      await pool.query(
-        `INSERT INTO books (id, title, author, genre, price, stockQuantity) 
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          approvedBook.id,
-          approvedBook.title,
-          approvedBook.author,
-          approvedBook.genre,
-          approvedBook.price,
-          approvedBook.stockQuantity,
-        ]
-      );
-      res.json(approvedBook);
-    } else {
-      res.status(404).send("Pending book not found");
+    const bookId = req.params.id;
+
+    // Fetch the pending book details
+    const pendingBookQuery = `SELECT * FROM book_requests WHERE id = $1 AND status = $2`;
+    const pendingBookResult = await pool.query(pendingBookQuery, [
+      bookId,
+      "pending",
+    ]);
+
+    if (pendingBookResult.rowCount === 0) {
+      res
+        .status(404)
+        .json({ message: "Pending book not found or already processed" });
+
+      return;
     }
+
+    const pendingBook = pendingBookResult.rows[0];
+
+    // Add the book to the books table
+    const insertBookQuery = `
+      INSERT INTO books 
+      (id, title, author, genre, price, stock_quantity, ISBN, publisher, pages, language, publication_date, description, cover_image)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      RETURNING *;
+    `;
+
+    await pool.query(insertBookQuery, [
+      pendingBook.id,
+      pendingBook.title,
+      pendingBook.author,
+      pendingBook.genre,
+      pendingBook.price,
+      pendingBook.stock_quantity,
+      pendingBook.ISBN,
+      pendingBook.publisher,
+      pendingBook.pages,
+      pendingBook.language,
+      pendingBook.publication_date,
+      pendingBook.description,
+      pendingBook.cover_image,
+    ]);
+
+    const updatePendingBookQuery = `UPDATE book_requests SET status = $1 WHERE id = $2 RETURNING *`;
+    const updateResult = await pool.query(updatePendingBookQuery, [
+      "approved",
+      bookId,
+    ]);
+
+    res.json(updateResult.rows[0]);
   } catch (error) {
     console.error("Error approving book:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
-export const rejectBook = async (req: Request, res: Response) => {
+export const rejectBookRequest = async (req: Request, res: Response) => {
   try {
-    const rejectedBook = await pool.query(
-      `UPDATE pending_books SET status = $1 WHERE id = $2 RETURNING *`,
-      ["rejected", req.params.id]
-    );
-    if (rejectedBook.rows.length > 0) {
-      res.json({ message: "Book rejected", book: rejectedBook.rows[0] });
+    const bookId = req.params.id;
+
+    const query = `
+      UPDATE book_requests
+      SET status = $1
+      WHERE id = $2
+      RETURNING *;
+    `;
+
+    const result = await pool.query(query, ["rejected", bookId]);
+
+    if (result.rowCount === 0) {
+      res.status(404).json({ message: "Book request not found" });
     } else {
-      res.status(404).send("Pending book not found");
+      res.json({ message: "Book request rejected", book: result.rows[0] });
     }
   } catch (error) {
-    console.error("Error rejecting book:", error);
+    console.error("Error rejecting book request:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
-// export const getPendingBooks = (req: Request, res: Response) => {
-//   const pendingBooks = readPendingBooksFromFile();
-//   res.json(pendingBooks);
-// };
-
-// // Salesman adds a book as "pending"
-// export const addPendingBook = (req: Request, res: Response) => {
-//   const pendingBooks = readPendingBooksFromFile();
-//   // const newBook: Book = {
-//   //   id: pendingBooks.length ? pendingBooks[pendingBooks.length - 1].id + 1 : 1,
-//   //   ...req.body,
-//   //   status: "pending",
-//   // };
-
-//   const newBook: Book = {
-//     id: uuidv4(), // Generate a unique ID
-//     ...req.body,
-//     status: "pending",
-//   };
-
-//   pendingBooks.push(newBook);
-//   writePendingBooksToFile(pendingBooks);
-//   res.status(201).json(newBook);
-// };
-
-// export const approveBook = (req: Request, res: Response) => {
-//   const pendingBooks = readPendingBooksFromFile();
-//   const books = readBooksFromFile();
-//   const bookIndex = pendingBooks.findIndex((b) => b.id === req.params.id);
-
-//   if (bookIndex !== -1) {
-//     // Update the status of the book in the pendingBooks list
-//     const approvedBook: Book = {
-//       ...pendingBooks[bookIndex],
-//       status: "approved",
-//     };
-
-//     // Add the book to the approved books list
-//     books.push(approvedBook);
-
-//     // Update the pending book with the new status
-//     pendingBooks[bookIndex] = approvedBook;
-
-//     writeBooksToFile(books); // Save approved books
-//     writePendingBooksToFile(pendingBooks); // Update pending list
-
-//     res.json(approvedBook); // Respond with the approved book
-//   } else {
-//     res.status(404).send("Pending book not found");
-//   }
-// };
-
-// export const rejectBook = (req: Request, res: Response) => {
-//   const pendingBooks = readPendingBooksFromFile();
-//   const bookIndex = pendingBooks.findIndex((b) => b.id === req.params.id);
-
-//   if (bookIndex !== -1) {
-//     // Update the status of the book in the pendingBooks list
-//     pendingBooks[bookIndex] = {
-//       ...pendingBooks[bookIndex],
-//       status: "rejected",
-//     };
-
-//     writePendingBooksToFile(pendingBooks); // Update pending list
-//     res.json({ message: "Book rejected", book: pendingBooks[bookIndex] });
-//   } else {
-//     res.status(404).send("Pending book not found");
-//   }
-// };

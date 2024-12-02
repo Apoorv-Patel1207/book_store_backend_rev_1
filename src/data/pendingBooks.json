@@ -95,7 +95,7 @@
     "genre": "crime",
     "author": "salesman",
     "title": "new book2",
-    "status": "pending"
+    "status": "rejected"
   },
   {
     "id": 123,
@@ -111,7 +111,7 @@
     "genre": "crime",
     "author": "salesman",
     "title": "new book1",
-    "status": "approved"
+    "status": "rejected"
   },
   {
     "id": "753b2edc-cd0f-44e3-903c-35a2e0b6371b",

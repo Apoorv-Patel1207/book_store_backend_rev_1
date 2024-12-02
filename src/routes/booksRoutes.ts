@@ -5,21 +5,21 @@ import {
   createBook,
   deleteBook,
   searchBooks,
-  approveBook,
-  getPendingBooks,
-  rejectBook,
-  addPendingBook,
+  approveBookRequest,
+  rejectBookRequest,
+  addBookRequest,
   updateBook,
+  getBookRequests,
 } from "../controllers/booksController";
 
 const router = express.Router();
 
 router.get("/search-books", searchBooks);
 
-router.get("/pending-books", getPendingBooks);
-router.post("/pending-books", addPendingBook);
-router.post("/pending-books/:id/approve", approveBook);
-router.delete("/pending-books/:id/reject", rejectBook);
+router.get("/pending-books", getBookRequests);
+router.post("/pending-books", addBookRequest);
+router.post("/pending-books/:id/approve", approveBookRequest);
+router.delete("/pending-books/:id/reject", rejectBookRequest);
 
 router.get("/", getBooks);
 router.get("/:id", getBookById);
