@@ -1,118 +1,155 @@
 import { Request, Response } from "express";
-import {
-  readBooksFromFile,
-  readOrdersFromFile,
-  writeBooksToFile,
-  writeOrdersToFile,
-} from "../utils/db";
-import { Order } from "../models/order";
-import { Book } from "../models/book";
+const pool = require("../postgre_db/db");
 
-export const createOrder = (req: Request, res: Response) => {
-  const orders: Order[] = readOrdersFromFile();
-  const books: Book[] = readBooksFromFile();
-  const newOrder: Order = req.body;
+export const createOrder = async (req: Request, res: Response) => {
+  const { items, orderDate, status, total_amount, userProfile } = req.body;
+  const userId = req.header("x-user-id");
 
-  newOrder.userId = req.header("x-user-id") || "0";
-  newOrder.orderId = Date.now();
-  newOrder.orderDate = new Date().toISOString().split("T")[0];
-  newOrder.status = "Processing";
+  try {
+    const client = await pool.connect();
 
-  // Check stock availability and update stock quantities
-  const insufficientStockBooks = newOrder.items.filter((orderItem) => {
-    const book = books.find((b) => b.id === orderItem.id);
-    return book && book.stockQuantity < orderItem.quantity;
-  });
+    try {
+      await client.query("BEGIN");
 
-  if (insufficientStockBooks.length > 0) {
-    // If any books have insufficient stock, return an error response
-    res.status(400).json({
-      message: "Insufficient stock for some items",
-      insufficientStockBooks,
-    });
-    return;
-  }
+      // Check stock availability
+      const insufficientStockBooks: any[] = [];
+      for (const item of items) {
+        const bookResult = await client.query(
+          "SELECT stock_quantity FROM books WHERE id = $1",
+          [item.id]
+        );
 
-  // Deduct stock quantities for each book in the order
-  newOrder.items.forEach((orderItem) => {
-    const book = books.find((b) => b.id === orderItem.id);
-    if (book) {
-      book.stockQuantity -= orderItem.quantity;
+        if (
+          bookResult.rows.length === 0 ||
+          bookResult.rows[0].stock_quantity < item.quantity
+        ) {
+          insufficientStockBooks.push(item);
+        }
+      }
+
+      if (insufficientStockBooks.length > 0) {
+        await client.query("ROLLBACK");
+        res.status(400).json({
+          message: "Insufficient stock for some items",
+          insufficientStockBooks,
+        });
+        return;
+      }
+
+      // Deduct stock quantities and create the order
+      for (const item of items) {
+        await client.query(
+          "UPDATE books SET stock_quantity = stock_quantity - $1 WHERE id = $2",
+          [item.quantity, item.id]
+        );
+      }
+
+      const newOrderResult = await client.query(
+        `INSERT INTO orders (order_id, user_id, total_amount, order_date, status, user_name, user_email, user_phone, user_address, items) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+        [
+          Date.now(),
+          userId,
+          total_amount,
+          new Date().toISOString().split("T")[0],
+          "Processing",
+          userProfile.name,
+          userProfile.email,
+          userProfile.phone,
+          userProfile.address,
+          JSON.stringify(items),
+        ]
+      );
+
+      await client.query("COMMIT");
+      res.status(201).json(newOrderResult.rows[0]);
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error("Error creating order:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    } finally {
+      client.release();
     }
-  });
-
-  // Save the updated books and orders
-  writeBooksToFile(books);
-  orders.push(newOrder);
-  writeOrdersToFile(orders);
-
-  res.status(201).json(newOrder);
-};
-
-export const getOrders = (req: Request, res: Response) => {
-  const userId = req.header("x-user-id");
-  if (!userId) {
-    res.status(400).send("User ID is required");
+  } catch (error) {
+    console.error("Database connection error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
-
-  const orders = readOrdersFromFile();
-
-  const userOrders = orders.filter((order) => order.userId === userId);
-
-  res.json(userOrders);
 };
 
-export const getOrderById = (req: Request, res: Response) => {
+export const getOrders = async (req: Request, res: Response) => {
+  const userId = req.header("x-user-id");
+
+  try {
+    const result = await pool.query("SELECT * FROM orders WHERE user_id = $1", [
+      userId,
+    ]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const getOrderById = async (req: Request, res: Response) => {
   const userId = req.header("x-user-id");
   const orderId = parseInt(req.params.id);
-  const orders = readOrdersFromFile();
 
-  // const order = orders.find((o) => o.orderId === parseInt(req.params.id));
-  const order = orders.find(
-    (o) => o.userId === userId && o.orderId === orderId
-  );
+  try {
+    const result = await pool.query(
+      "SELECT * FROM orders WHERE user_id = $1 AND order_id = $2",
+      [userId, orderId]
+    );
 
-  if (order) {
-    res.json(order);
-  } else {
-    res.status(404).send("Order not found");
+    if (result.rows.length > 0) {
+      res.json(result.rows[0]);
+    } else {
+      res.status(404).send("Order not found");
+    }
+  } catch (error) {
+    console.error("Error fetching order:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
-export const deleteOrder = (req: Request, res: Response) => {
+export const deleteOrder = async (req: Request, res: Response) => {
   const userId = req.header("x-user-id");
   const orderId = parseInt(req.params.id);
-  const orders = readOrdersFromFile();
 
-  const orderIndex = orders.findIndex(
-    (o) => o.userId === userId && o.orderId === orderId
-  );
+  try {
+    const result = await pool.query(
+      "DELETE FROM orders WHERE user_id = $1 AND order_id = $2 RETURNING *",
+      [userId, orderId]
+    );
 
-  if (orderIndex !== -1) {
-    orders.splice(orderIndex, 1);
-    writeOrdersToFile(orders);
-    res.status(204).send();
-  } else {
-    res.status(404).send("Order not found");
+    if (result.rows.length > 0) {
+      res.status(204).send();
+    } else {
+      res.status(404).send("Order not found");
+    }
+  } catch (error) {
+    console.error("Error deleting order:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
-// Update the status of an order
-export const updateOrderStatus = (req: Request, res: Response) => {
+export const updateOrderStatus = async (req: Request, res: Response) => {
   const userId = req.header("x-user-id");
-  const orders: Order[] = readOrdersFromFile();
   const orderId = parseInt(req.params.id);
   const { status } = req.body;
 
-  const order = orders.find(
-    (o) => o.userId === userId && o.orderId === orderId
-  );
+  try {
+    const result = await pool.query(
+      `UPDATE orders SET status = $1 WHERE user_id = $2 AND order_id = $3 RETURNING *`,
+      [status, userId, orderId]
+    );
 
-  if (order) {
-    order.status = status;
-    writeOrdersToFile(orders);
-    res.json(order);
-  } else {
-    res.status(404).send("Order not found");
+    if (result.rows.length > 0) {
+      res.json(result.rows[0]);
+    } else {
+      res.status(404).send("Order not found");
+    }
+  } catch (error) {
+    console.error("Error updating order status:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
