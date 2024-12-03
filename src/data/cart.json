@@ -83,5 +83,22 @@
     "stockQuantity": 9,
     "quantity": 1,
     "userId": "auth0|674090a58d1a261f6b8890af"
+  },
+  {
+    "id": "246",
+    "title": "Moby-Dick",
+    "author": "Herman Melville",
+    "genre": "classic",
+    "price": "11.49",
+    "cover_image": "/images/booksImages (8).jpg",
+    "description": "An epic tale of the voyage of the whaling ship Pequod, commanded by Captain Ahab.",
+    "publication_date": "1851-11-13T18:06:32.000Z",
+    "isbn": "978-1503280786",
+    "language": "English",
+    "pages": 635,
+    "publisher": "Harper & Brothers",
+    "stock_quantity": 3,
+    "quantity": 1,
+    "userId": "google-oauth2|117221977605173875699"
   }
 ]
