@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 const pool = require("../postgre_db/db");
 
 export const createOrder = async (req: Request, res: Response) => {
-  const { items, orderDate, status, total_amount, userProfile } = req.body;
+  const { items, total_amount, userProfile } = req.body;
   const userId = req.header("x-user-id");
 
   try {
@@ -36,7 +36,7 @@ export const createOrder = async (req: Request, res: Response) => {
         return;
       }
 
-      // Deduct stock quantities and create the order
+      // Deduct stock quantities for each item
       for (const item of items) {
         await client.query(
           "UPDATE books SET stock_quantity = stock_quantity - $1 WHERE id = $2",
@@ -44,9 +44,10 @@ export const createOrder = async (req: Request, res: Response) => {
         );
       }
 
+      // Insert the order
       const newOrderResult = await client.query(
-        `INSERT INTO orders (order_id, user_id, total_amount, order_date, status, user_name, user_email, user_phone, user_address, items) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+        `INSERT INTO orders (order_id, user_id, order_amount, order_date, status, recipient_name, recipient_phone, shipping_address) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING order_id`,
         [
           Date.now(),
           userId,
@@ -54,12 +55,32 @@ export const createOrder = async (req: Request, res: Response) => {
           new Date().toISOString().split("T")[0],
           "Processing",
           userProfile.name,
-          userProfile.email,
           userProfile.phone,
           userProfile.address,
-          JSON.stringify(items),
         ]
       );
+
+      const orderId = newOrderResult.rows[0].order_id;
+
+      // Insert each item into purchase_items
+      for (const item of items) {
+        await client.query(
+          `INSERT INTO purchase_items (order_id, book_id, title, author, price, cover_image,  
+           quantity, user_id, amount) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [
+            orderId,
+            item.id,
+            item.title,
+            item.author,
+            item.price,
+            item.cover_image,
+            item.quantity,
+            userId,
+            item.price * item.quantity,
+          ]
+        );
+      }
 
       await client.query("COMMIT");
       res.status(201).json(newOrderResult.rows[0]);
@@ -80,10 +101,22 @@ export const getOrders = async (req: Request, res: Response) => {
   const userId = req.header("x-user-id");
 
   try {
-    const result = await pool.query("SELECT * FROM orders WHERE user_id = $1", [
-      userId,
-    ]);
-    res.json(result.rows);
+    const ordersResult = await pool.query(
+      "SELECT * FROM orders WHERE user_id = $1",
+      [userId]
+    );
+
+    const orders = await Promise.all(
+      ordersResult.rows.map(async (order: { order_id: any }) => {
+        const itemsResult = await pool.query(
+          "SELECT * FROM purchase_items WHERE order_id = $1",
+          [order.order_id]
+        );
+        return { ...order, items: itemsResult.rows };
+      })
+    );
+
+    res.json(orders);
   } catch (error) {
     console.error("Error fetching orders:", error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -95,13 +128,17 @@ export const getOrderById = async (req: Request, res: Response) => {
   const orderId = parseInt(req.params.id);
 
   try {
-    const result = await pool.query(
+    const orderResult = await pool.query(
       "SELECT * FROM orders WHERE user_id = $1 AND order_id = $2",
       [userId, orderId]
     );
 
-    if (result.rows.length > 0) {
-      res.json(result.rows[0]);
+    if (orderResult.rows.length > 0) {
+      const itemsResult = await pool.query(
+        "SELECT * FROM purchase_items WHERE order_id = $1",
+        [orderId]
+      );
+      res.json({ ...orderResult.rows[0], items: itemsResult.rows });
     } else {
       res.status(404).send("Order not found");
     }

@@ -68,23 +68,6 @@
     "userId": "auth0|673edcff5e0e08841605f346"
   },
   {
-    "id": "204",
-    "title": "The Shining",
-    "author": "Stephen King",
-    "genre": "horror",
-    "price": 13.5,
-    "coverImage": "/images/booksImages (5).jpg",
-    "description": "A family stays at a haunted hotel where a supernatural force drives the father to madness.",
-    "publicationDate": "1977-01-28",
-    "ISBN": "978-0307743657",
-    "language": "English",
-    "pages": 447,
-    "publisher": "Doubleday",
-    "stockQuantity": 11,
-    "quantity": 1,
-    "userId": "google-oauth2|117221977605173875699"
-  },
-  {
     "id": "200",
     "title": "The Hobbit",
     "author": "J.R.R. Tolkien",
@@ -100,22 +83,5 @@
     "stockQuantity": 9,
     "quantity": 1,
     "userId": "auth0|674090a58d1a261f6b8890af"
-  },
-  {
-    "id": "230",
-    "title": "The Shining",
-    "author": "Stephen King",
-    "genre": "horror",
-    "price": "13.99",
-    "cover_image": "/images/booksImages (1).jpg",
-    "description": "A psychological horror novel about a family’s terrifying experience in a remote, haunted hotel.",
-    "publication_date": "1977-01-27T18:30:00.000Z",
-    "isbn": "978-0307743657",
-    "language": "English",
-    "pages": 659,
-    "publisher": "Doubleday",
-    "stock_quantity": 8,
-    "quantity": 1,
-    "userId": "google-oauth2|117221977605173875699"
   }
 ]
