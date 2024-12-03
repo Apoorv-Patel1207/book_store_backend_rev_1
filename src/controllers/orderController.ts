@@ -2,7 +2,13 @@ import { Request, Response } from "express";
 const pool = require("../postgre_db/db");
 
 export const createOrder = async (req: Request, res: Response) => {
-  const { items, total_amount, userProfile } = req.body;
+  const {
+    items,
+    total_amount,
+    recipient_name,
+    recipient_phone,
+    shipping_address,
+  } = req.body;
   const userId = req.header("x-user-id");
 
   try {
@@ -15,8 +21,8 @@ export const createOrder = async (req: Request, res: Response) => {
       const insufficientStockBooks: any[] = [];
       for (const item of items) {
         const bookResult = await client.query(
-          "SELECT stock_quantity FROM books WHERE id = $1",
-          [item.id]
+          "SELECT stock_quantity FROM books WHERE book_id = $1",
+          [item.book_id]
         );
 
         if (
@@ -39,8 +45,8 @@ export const createOrder = async (req: Request, res: Response) => {
       // Deduct stock quantities for each item
       for (const item of items) {
         await client.query(
-          "UPDATE books SET stock_quantity = stock_quantity - $1 WHERE id = $2",
-          [item.quantity, item.id]
+          "UPDATE books SET stock_quantity = stock_quantity - $1 WHERE book_id = $2",
+          [item.quantity, item.book_id]
         );
       }
 
@@ -54,9 +60,9 @@ export const createOrder = async (req: Request, res: Response) => {
           total_amount,
           new Date().toISOString().split("T")[0],
           "Processing",
-          userProfile.name,
-          userProfile.phone,
-          userProfile.address,
+          recipient_name,
+          recipient_phone,
+          shipping_address,
         ]
       );
 
@@ -70,7 +76,7 @@ export const createOrder = async (req: Request, res: Response) => {
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
           [
             orderId,
-            item.id,
+            item.book_id,
             item.title,
             item.author,
             item.price,

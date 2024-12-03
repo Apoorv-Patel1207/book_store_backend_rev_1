@@ -65,8 +65,9 @@ export const getBooks = async (req: Request, res: Response) => {
 };
 
 export const getBookById = async (req: Request, res: Response) => {
+
   try {
-    const result = await pool.query("SELECT * FROM books WHERE id = $1", [
+    const result = await pool.query("SELECT * FROM books WHERE book_id = $1", [
       req.params.id,
     ]);
     if (result.rows.length > 0) {
@@ -97,7 +98,7 @@ export const createBook = async (req: Request, res: Response) => {
   } = req.body;
   try {
     const newBook = await pool.query(
-      `INSERT INTO books (id, title, author, genre, price, cover_image, description, publication_date, isbn, language, pages,publisher, stock_quantity) 
+      `INSERT INTO books (book_id, title, author, genre, price, cover_image, description, publication_date, isbn, language, pages,publisher, stock_quantity) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
       [
         uuidv4(),
@@ -129,7 +130,7 @@ export const updateBook = async (req: Request, res: Response) => {
       `UPDATE books SET
        price = COALESCE($1, price),
        stock_quantity = COALESCE($2, stock_quantity)
-       WHERE id = $3 RETURNING *`,
+       WHERE book_id = $3 RETURNING *`,
       [price, stock_quantity, req.params.id]
     );
     if (updatedBook.rows.length > 0) {
@@ -146,7 +147,7 @@ export const updateBook = async (req: Request, res: Response) => {
 export const deleteBook = async (req: Request, res: Response) => {
   try {
     const deletedBook = await pool.query(
-      "DELETE FROM books WHERE id = $1 RETURNING *",
+      "DELETE FROM books WHERE book_id = $1 RETURNING *",
       [req.params.id]
     );
     if (deletedBook.rows.length > 0) {
