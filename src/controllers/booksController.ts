@@ -65,7 +65,6 @@ export const getBooks = async (req: Request, res: Response) => {
 };
 
 export const getBookById = async (req: Request, res: Response) => {
-
   try {
     const result = await pool.query("SELECT * FROM books WHERE book_id = $1", [
       req.params.id,
@@ -82,6 +81,8 @@ export const getBookById = async (req: Request, res: Response) => {
 };
 
 export const createBook = async (req: Request, res: Response) => {
+  const userId = req.header("x-user-id");
+
   const {
     ISBN,
     author,
@@ -98,8 +99,8 @@ export const createBook = async (req: Request, res: Response) => {
   } = req.body;
   try {
     const newBook = await pool.query(
-      `INSERT INTO books (book_id, title, author, genre, price, cover_image, description, publication_date, isbn, language, pages,publisher, stock_quantity) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+      `INSERT INTO books (book_id, title, author, genre, price, cover_image, description, publication_date, isbn, language, pages,publisher, stock_quantity, user_id) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
       [
         uuidv4(),
         title,
@@ -114,6 +115,7 @@ export const createBook = async (req: Request, res: Response) => {
         pages,
         publisher,
         stockQuantity,
+        userId,
       ]
     );
     res.status(201).json(newBook.rows[0]);

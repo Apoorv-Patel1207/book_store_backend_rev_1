@@ -1,4 +1,3 @@
-
 import { Request, Response } from "express";
 const pool = require("../postgre_db/db");
 
@@ -50,8 +49,8 @@ export const createOrUpdateUser = async (
     } else {
       // Create new user
       const newUser = await pool.query(
-        `INSERT INTO users (user_id, name, email, role, created_at = NOW())
-         VALUES ($1, $2, $3, $4) RETURNING *`,
+        `INSERT INTO users (user_id, name, email, role, created_at)
+         VALUES ($1, $2, $3, $4, NOW()) RETURNING *`,
         [userId, name, email, "customer"]
       );
       res.status(201).json(newUser.rows[0]);

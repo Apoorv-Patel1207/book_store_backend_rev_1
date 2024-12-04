@@ -13,6 +13,8 @@ export const getBookRequests = async (req: Request, res: Response) => {
 };
 
 export const addBookRequest = async (req: Request, res: Response) => {
+  const userId = req.header("x-user-id");
+
   try {
     const {
       title,
@@ -33,8 +35,8 @@ export const addBookRequest = async (req: Request, res: Response) => {
 
     const query = `
       INSERT INTO book_requests 
-      (id, title, author, genre, price, stock_quantity, ISBN, publisher, pages, language, publication_date, description, cover_image, status) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      (book_id, title, author, genre, price, stock_quantity, ISBN, publisher, pages, language, publication_date, description, cover_image, status, user_id) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       RETURNING *;
     `;
 
@@ -53,6 +55,7 @@ export const addBookRequest = async (req: Request, res: Response) => {
       description,
       coverImage,
       "pending",
+      userId,
     ]);
 
     res.status(201).json(result.rows[0]);
@@ -68,7 +71,7 @@ export const approveBookRequest = async (req: Request, res: Response) => {
     const bookId = req.params.id;
 
     // Fetch the pending book details
-    const pendingBookQuery = `SELECT * FROM book_requests WHERE id = $1 AND status = $2`;
+    const pendingBookQuery = `SELECT * FROM book_requests WHERE book_id = $1 AND status = $2`;
     const pendingBookResult = await pool.query(pendingBookQuery, [
       bookId,
       "pending",
@@ -87,13 +90,13 @@ export const approveBookRequest = async (req: Request, res: Response) => {
     // Add the book to the books table
     const insertBookQuery = `
       INSERT INTO books 
-      (id, title, author, genre, price, stock_quantity, ISBN, publisher, pages, language, publication_date, description, cover_image)
+      (book_id, title, author, genre, price, stock_quantity, ISBN, publisher, pages, language, publication_date, description, cover_image)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       RETURNING *;
     `;
 
     await pool.query(insertBookQuery, [
-      pendingBook.id,
+      pendingBook.book_id,
       pendingBook.title,
       pendingBook.author,
       pendingBook.genre,
@@ -108,7 +111,7 @@ export const approveBookRequest = async (req: Request, res: Response) => {
       pendingBook.cover_image,
     ]);
 
-    const updatePendingBookQuery = `UPDATE book_requests SET status = $1 WHERE id = $2 RETURNING *`;
+    const updatePendingBookQuery = `UPDATE book_requests SET status = $1 WHERE book_id = $2 RETURNING *`;
     const updateResult = await pool.query(updatePendingBookQuery, [
       "approved",
       bookId,
@@ -128,7 +131,7 @@ export const rejectBookRequest = async (req: Request, res: Response) => {
     const query = `
       UPDATE book_requests
       SET status = $1
-      WHERE id = $2
+      WHERE book_id = $2
       RETURNING *;
     `;
 
