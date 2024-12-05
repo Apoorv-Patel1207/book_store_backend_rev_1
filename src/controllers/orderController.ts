@@ -52,10 +52,9 @@ export const createOrder = async (req: Request, res: Response) => {
 
       // Insert the order
       const newOrderResult = await client.query(
-        `INSERT INTO orders (order_id, user_id, order_amount, order_date, status, recipient_name, recipient_phone, shipping_address) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING order_id`,
+        `INSERT INTO orders ( user_id, order_amount, order_date, status, recipient_name, recipient_phone, shipping_address) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING order_id`,
         [
-          Date.now(),
           userId,
           total_amount,
           new Date().toISOString().split("T")[0],
@@ -131,7 +130,7 @@ export const getOrders = async (req: Request, res: Response) => {
 
 export const getOrderById = async (req: Request, res: Response) => {
   const userId = req.header("x-user-id");
-  const orderId = parseInt(req.params.id);
+  const orderId = req.params.id;
 
   try {
     const orderResult = await pool.query(
@@ -156,7 +155,7 @@ export const getOrderById = async (req: Request, res: Response) => {
 
 export const deleteOrder = async (req: Request, res: Response) => {
   const userId = req.header("x-user-id");
-  const orderId = parseInt(req.params.id);
+  const orderId = req.params.id;
 
   try {
     const result = await pool.query(
@@ -177,7 +176,7 @@ export const deleteOrder = async (req: Request, res: Response) => {
 
 export const updateOrderStatus = async (req: Request, res: Response) => {
   const userId = req.header("x-user-id");
-  const orderId = parseInt(req.params.id);
+  const orderId = req.params.id;
   const { status } = req.body;
 
   try {
