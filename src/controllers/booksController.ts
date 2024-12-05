@@ -30,6 +30,8 @@ export const getBooks = async (req: Request, res: Response) => {
       queryParams.push(`%${searchQuery.toLowerCase()}%`);
     }
 
+    query += ` ORDER BY created_at DESC`;
+
     // Count the total filtered books for pagination metadata
     const countQuery = `SELECT COUNT(*) FROM (${query}) AS filtered_books`;
     const countResult = await pool.query(countQuery, queryParams);
