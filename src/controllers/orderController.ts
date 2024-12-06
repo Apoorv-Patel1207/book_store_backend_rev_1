@@ -107,12 +107,12 @@ export const getOrders = async (req: Request, res: Response) => {
 
   try {
     const ordersResult = await pool.query(
-      "SELECT * FROM orders WHERE user_id = $1",
+      "SELECT * FROM orders WHERE user_id = $1 ORDER BY created_at DESC",
       [userId]
     );
 
     const orders = await Promise.all(
-      ordersResult.rows.map(async (order: { order_id: any }) => {
+      ordersResult.rows.map(async (order: { order_id: string }) => {
         const itemsResult = await pool.query(
           "SELECT * FROM purchase_items WHERE order_id = $1",
           [order.order_id]
