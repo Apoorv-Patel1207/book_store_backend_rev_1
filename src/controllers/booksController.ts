@@ -4,7 +4,6 @@ const pool = require("../postgre_db/db");
 
 export const getBooks = async (req: Request, res: Response) => {
   try {
-    // Extract query parameters for filtering and searching
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const searchQuery = (req.query.searchQuery as string) || "";
@@ -12,17 +11,14 @@ export const getBooks = async (req: Request, res: Response) => {
     const priceMin = parseFloat(req.query.priceMin as string) || 0;
     const priceMax = parseFloat(req.query.priceMax as string) || 1000;
 
-    // Base query
     let query = `SELECT * FROM books WHERE price BETWEEN $1 AND $2`;
     const queryParams: any[] = [priceMin, priceMax];
 
-    // Add genre filter if applicable
     if (filterGenre !== "all") {
       query += ` AND genre = $3`;
       queryParams.push(filterGenre);
     }
 
-    // Add search filter for title or author
     if (searchQuery) {
       query += ` AND (LOWER(title) LIKE $${
         queryParams.length + 1
@@ -32,25 +28,20 @@ export const getBooks = async (req: Request, res: Response) => {
 
     query += ` ORDER BY created_at DESC`;
 
-    // Count the total filtered books for pagination metadata
     const countQuery = `SELECT COUNT(*) FROM (${query}) AS filtered_books`;
     const countResult = await pool.query(countQuery, queryParams);
     const totalCount = parseInt(countResult.rows[0].count, 10);
     const totalPages = Math.ceil(totalCount / limit);
 
-    // Ensure the page is within valid bounds
-    const currentPage = Math.min(page, totalPages) || 1; // Clamp to total pages
+    const currentPage = Math.min(page, totalPages) || 1;
 
-    // Apply pagination
     query += ` LIMIT $${queryParams.length + 1} OFFSET $${
       queryParams.length + 2
     }`;
     queryParams.push(limit, (currentPage - 1) * limit);
 
-    // Fetch paginated books
     const result = await pool.query(query, queryParams);
 
-    // Send the response with books and pagination metadata
     res.json({
       books: result.rows,
       pagination: {

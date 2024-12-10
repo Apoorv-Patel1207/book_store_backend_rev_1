@@ -65,12 +65,10 @@ export const addBookRequest = async (req: Request, res: Response) => {
   }
 };
 
-// Approve a pending book
 export const approveBookRequest = async (req: Request, res: Response) => {
   try {
     const bookId = req.params.id;
 
-    // Fetch the pending book details
     const pendingBookQuery = `SELECT * FROM book_requests WHERE book_id = $1 AND status = $2`;
     const pendingBookResult = await pool.query(pendingBookQuery, [
       bookId,
@@ -87,7 +85,6 @@ export const approveBookRequest = async (req: Request, res: Response) => {
 
     const pendingBook = pendingBookResult.rows[0];
 
-    // Add the book to the books table
     const insertBookQuery = `
       INSERT INTO books 
       (book_id, title, author, genre, price, stock_quantity, ISBN, publisher, pages, language, publication_date, description, cover_image)

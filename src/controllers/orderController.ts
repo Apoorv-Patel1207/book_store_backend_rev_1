@@ -17,7 +17,6 @@ export const createOrder = async (req: Request, res: Response) => {
     try {
       await client.query("BEGIN");
 
-      // Check stock availability
       const insufficientStockBooks: any[] = [];
       for (const item of items) {
         const bookResult = await client.query(
@@ -42,7 +41,6 @@ export const createOrder = async (req: Request, res: Response) => {
         return;
       }
 
-      // Deduct stock quantities for each item
       for (const item of items) {
         await client.query(
           "UPDATE books SET stock_quantity = stock_quantity - $1 WHERE book_id = $2",
@@ -50,7 +48,6 @@ export const createOrder = async (req: Request, res: Response) => {
         );
       }
 
-      // Insert the order
       const newOrderResult = await client.query(
         `INSERT INTO orders ( user_id, order_amount, order_date, status, recipient_name, recipient_phone, shipping_address) 
          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING order_id`,
@@ -67,7 +64,6 @@ export const createOrder = async (req: Request, res: Response) => {
 
       const orderId = newOrderResult.rows[0].order_id;
 
-      // Insert each item into purchase_items
       for (const item of items) {
         await client.query(
           `INSERT INTO purchase_items (order_id, book_id, title, author, price, cover_image,  

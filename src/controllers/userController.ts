@@ -1,13 +1,12 @@
 import { Request, Response } from "express";
 const pool = require("../postgre_db/db");
 
-// Get user profile
 export const getUserProfile = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const userId = req.header("x-user-id"); // Expecting Auth0's user ID
+    const userId = req.header("x-user-id"); 
     const result = await pool.query("SELECT * FROM users WHERE user_id = $1", [
       userId,
     ]);
@@ -23,7 +22,6 @@ export const getUserProfile = async (
   }
 };
 
-// Create or update user profile
 export const createOrUpdateUser = async (
   req: Request,
   res: Response
@@ -39,7 +37,6 @@ export const createOrUpdateUser = async (
     );
 
     if (existingUserResult.rows.length > 0) {
-      // Update existing user
       const updatedUser = await pool.query(
         `UPDATE users SET name = $1, email = $2, updated_at = NOW()
          WHERE user_id = $3 RETURNING *`,
@@ -47,7 +44,6 @@ export const createOrUpdateUser = async (
       );
       res.status(200).json(updatedUser.rows[0]);
     } else {
-      // Create new user
       const newUser = await pool.query(
         `INSERT INTO users (user_id, name, email, role, created_at)
          VALUES ($1, $2, $3, $4, NOW()) RETURNING *`,
@@ -61,7 +57,6 @@ export const createOrUpdateUser = async (
   }
 };
 
-// Update user profile details
 export const updateUserProfile = async (
   req: Request,
   res: Response
@@ -90,7 +85,6 @@ export const updateUserProfile = async (
   }
 };
 
-// Update user role
 export const updateUserRole = async (
   req: Request,
   res: Response
