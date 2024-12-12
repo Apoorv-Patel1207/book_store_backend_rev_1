@@ -13,6 +13,7 @@ import {
   updateBook,
   deleteBook,
 } from "../controllers/booksController";
+import upload from "../middleware/uploadMiddleware";
 
 const router = express.Router();
 
@@ -25,7 +26,7 @@ router.delete("/pending-books/:id/reject", rejectBookRequest);
 
 router.get("/", getBooks);
 router.get("/:id", getBookById);
-router.post("/", createBook);
+router.post("/", upload, createBook);
 router.put("/:id", updateBook);
 router.delete("/:id", deleteBook);
 
