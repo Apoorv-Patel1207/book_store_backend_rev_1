@@ -74,58 +74,8 @@ export const getBookById = async (req: Request, res: Response) => {
   }
 };
 
-// export const createBook = async (req: Request, res: Response) => {
-//   const userId = req.header("x-user-id");
-
-//   const {
-//     ISBN,
-//     author,
-//     description,
-//     genre,
-//     language,
-//     pages,
-//     price,
-//     publicationDate,
-//     publisher,
-//     stockQuantity,
-//     title,
-//   } = req.body;
-
-//   const coverImagePath = req.file?.path;
-//   console.log("req.file:", req.file);
-
-//   try {
-//     const newBook = await pool.query(
-//       `INSERT INTO books (book_id, title, author, genre, price, cover_image, description, publication_date, isbn, language, pages, publisher, stock_quantity, user_id)
-//        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
-//       [
-//         uuidv4(),
-//         title,
-//         author,
-//         genre,
-//         price,
-//         coverImagePath,
-//         description,
-//         publicationDate,
-//         ISBN,
-//         language,
-//         pages,
-//         publisher,
-//         stockQuantity,
-//         userId,
-//       ]
-//     );
-
-//     res.status(201).json(newBook.rows[0]);
-//   } catch (error) {
-//     console.error("Error creating book:", error);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
-
 export const createBook = async (req: Request, res: Response) => {
-  const userId = req.header("x-user-id"); // Retrieve user ID from the header
-
+  const userId = req.header("x-user-id"); 
   const {
     ISBN,
     author,
@@ -195,23 +145,6 @@ export const updateBook = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
-// export const deleteBook = async (req: Request, res: Response) => {
-//   try {
-//     const deletedBook = await pool.query(
-//       "DELETE FROM books WHERE book_id = $1 RETURNING *",
-//       [req.params.id]
-//     );
-//     if (deletedBook.rows.length > 0) {
-//       res.json(deletedBook.rows[0]);
-//     } else {
-//       res.status(404).send("Book not found");
-//     }
-//   } catch (error) {
-//     console.error("Error deleting book:", error);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
 
 export const deleteBook = async (req: Request, res: Response) => {
   try {
