@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
+import { uploadImageToS3 } from "../services/s3-service";
 const pool = require("../postgre_db/db");
 
 export const getBookRequests = async (req: Request, res: Response) => {
@@ -14,49 +15,52 @@ export const getBookRequests = async (req: Request, res: Response) => {
 
 export const addBookRequest = async (req: Request, res: Response) => {
   const userId = req.header("x-user-id");
+  const {
+    title,
+    author,
+    genre,
+    price,
+    stockQuantity,
+    ISBN,
+    publisher,
+    pages,
+    language,
+    publicationDate,
+    description,
+  } = req.body;
 
   try {
-    const {
-      title,
-      author,
-      genre,
-      price,
-      stockQuantity,
-      ISBN,
-      publisher,
-      pages,
-      language,
-      publicationDate,
-      description,
-      coverImage,
-    } = req.body;
+    const coverImage = req.file;
+    let coverImageUrl = "";
 
-    const newBookId = uuidv4();
+    if (coverImage) {
+      coverImageUrl = await uploadImageToS3(coverImage, "books_cover_img");
+    }
 
-    const query = `
-      INSERT INTO book_requests 
+    const result = await pool.query(
+      `INSERT INTO book_requests 
       (book_id, title, author, genre, price, stock_quantity, ISBN, publisher, pages, language, publication_date, description, cover_image, status, user_id) 
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       RETURNING *;
-    `;
-
-    const result = await pool.query(query, [
-      newBookId,
-      title,
-      author,
-      genre,
-      price,
-      stockQuantity,
-      ISBN,
-      publisher,
-      pages,
-      language,
-      publicationDate,
-      description,
-      coverImage,
-      "pending",
-      userId,
-    ]);
+    `,
+      [
+        uuidv4(),
+        title,
+        author,
+        genre,
+        price,
+        stockQuantity,
+        ISBN,
+        publisher,
+        pages,
+        language,
+        publicationDate,
+        description,
+        coverImageUrl,
+        "pending",
+        userId,
+      ]
+    );
 
     res.status(201).json(result.rows[0]);
   } catch (error) {

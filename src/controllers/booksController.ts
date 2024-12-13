@@ -75,7 +75,7 @@ export const getBookById = async (req: Request, res: Response) => {
 };
 
 export const createBook = async (req: Request, res: Response) => {
-  const userId = req.header("x-user-id"); 
+  const userId = req.header("x-user-id");
   const {
     ISBN,
     author,
@@ -95,7 +95,7 @@ export const createBook = async (req: Request, res: Response) => {
     let coverImageUrl = "";
 
     if (coverImage) {
-      coverImageUrl = await uploadImageToS3(coverImage);
+      coverImageUrl = await uploadImageToS3(coverImage, "books_cover_img");
     }
 
     const newBook = await pool.query(
@@ -159,10 +159,10 @@ export const deleteBook = async (req: Request, res: Response) => {
     }
 
     const coverImageUrl = bookQuery.rows[0].cover_image;
-    const imageKey = coverImageUrl.split("/").pop();
+    const imageKey = coverImageUrl?.split("/").pop();
 
     if (imageKey) {
-      await deleteImageFromS3(imageKey);
+      await deleteImageFromS3(imageKey, "books_cover_img");
     }
 
     const deletedBook = await pool.query(

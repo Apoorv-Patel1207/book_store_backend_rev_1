@@ -8,6 +8,9 @@ import {
 import { v4 as uuidv4 } from "uuid"; // Optional, for generating unique filenames
 import path from "path";
 
+import dotenv from "dotenv";
+dotenv.config();
+
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
@@ -16,9 +19,14 @@ const s3 = new S3Client({
   },
 });
 
-export const uploadImageToS3 = async (file: Express.Multer.File) => {
+export const uploadImageToS3 = async (
+  file: Express.Multer.File,
+  folder?: string
+) => {
   try {
-    const fileName = uuidv4() + path.extname(file.originalname);
+    const fileName = `${folder ? `${folder}/` : ""}${uuidv4()}${path.extname(
+      file.originalname
+    )}`;
 
     const uploadParams: PutObjectCommandInput = {
       Bucket: process.env.AWS_BUCKET_NAME,
@@ -38,11 +46,11 @@ export const uploadImageToS3 = async (file: Express.Multer.File) => {
   }
 };
 
-export const deleteImageFromS3 = async (imageKey: string) => {
+export const deleteImageFromS3 = async (imageKey: string, folder: string) => {
   try {
     const deleteParams: DeleteObjectCommandInput = {
       Bucket: process.env.AWS_BUCKET_NAME!,
-      Key: imageKey,
+      Key: `${folder ? `${folder}/` : ""}${imageKey}`,
     };
 
     const command = new DeleteObjectCommand(deleteParams);
