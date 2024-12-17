@@ -86,6 +86,19 @@ export const updateUserProfile = async (
         profileImage,
         "user_profile_img"
       );
+
+      await pool.query(
+        `UPDATE user_profile_images SET isCurrentProfile = false 
+         WHERE user_id = $1 AND isCurrentProfile = true`,
+        [userId]
+      );
+
+      await pool.query(
+        `INSERT INTO user_profile_images (user_id, profile_image, isCurrentProfile, uploaded_at)
+         VALUES ($1, $2, true, NOW())`,
+        [userId, profileImageUrl]
+      );
+
       query = `UPDATE users SET name = $1, email = $2, address = $3, dob = $4, gender = $5, phone = $6, profile_image = $7, updated_at = NOW() WHERE user_id = $8 RETURNING *`;
       params = [
         name,
