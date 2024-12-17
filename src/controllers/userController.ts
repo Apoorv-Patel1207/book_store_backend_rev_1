@@ -50,6 +50,13 @@ export const createOrUpdateUser = async (
          VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *`,
         [userId, name, email, profileImage, "customer"]
       );
+
+      await pool.query(
+        `INSERT INTO user_profile_images (user_id, profile_image, isCurrentProfile, uploaded_at)
+         VALUES ($1, $2, true, NOW())`,
+        [userId, profileImage]
+      );
+
       res.status(201).json(newUser.rows[0]);
     }
   } catch (error) {
